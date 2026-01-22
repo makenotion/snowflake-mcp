@@ -82,6 +82,82 @@ def initialize_query_manager_tool(server: FastMCP, snowflake_service):
     ):
         return run_query(statement, snowflake_service)
 
+    @server.tool(
+        name="set_query_context",
+        description="""Set runtime context for query comments and observability.
+
+Call this tool at the start of a session to register context information that will be
+included in all subsequent SQL query comments. This enables tracking queries back to
+specific agents, models, or sessions in Snowflake's query history.
+
+Common context keys:
+- model: The AI model name (e.g., "claude-sonnet-4", "gpt-4")
+- session_id: A unique session identifier for grouping related queries
+- agent_name: Name of the agent or application making queries
+- user_context: Additional user-provided context
+
+You can also set custom key-value pairs that will be available as template variables.
+Context persists for the lifetime of the MCP server connection.""",
+    )
+    def set_query_context_tool(
+        model: Annotated[
+            str,
+            Field(
+                default=None,
+                description="AI model name (e.g., 'claude-sonnet-4')",
+            ),
+        ] = None,
+        session_id: Annotated[
+            str,
+            Field(
+                default=None,
+                description="Unique session identifier for grouping queries",
+            ),
+        ] = None,
+        agent_name: Annotated[
+            str,
+            Field(
+                default=None,
+                description="Name of the agent or application",
+            ),
+        ] = None,
+        custom_context: Annotated[
+            dict,
+            Field(
+                default=None,
+                description="Additional custom key-value pairs for context",
+            ),
+        ] = None,
+    ):
+        """Set query context for observability."""
+        context = {}
+        if model is not None:
+            context["model"] = model
+        if session_id is not None:
+            context["session_id"] = session_id
+        if agent_name is not None:
+            context["agent_name"] = agent_name
+        if custom_context is not None:
+            context.update(custom_context)
+
+        updated_context = snowflake_service.set_query_context(**context)
+        return {
+            "status": "success",
+            "message": "Query context updated successfully",
+            "context": updated_context,
+        }
+
+    @server.tool(
+        name="get_query_context",
+        description="Get the current query context that will be included in query comments.",
+    )
+    def get_query_context_tool():
+        """Get current query context."""
+        return {
+            "context": snowflake_service.get_query_context(),
+            "query_comments_enabled": snowflake_service.query_comment_enabled,
+        }
+
 
 def get_statement_type(sql_string):
     """

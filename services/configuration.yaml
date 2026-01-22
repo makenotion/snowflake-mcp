@@ -54,7 +54,9 @@ sql_statement_permissions: # List SQL statements to explicitly allow (True) or d
   - Use: True
 
 # Query comment configuration - adds metadata to queries for observability
-# Set SNOWFLAKE_MCP_MODEL env var to include the AI model name in comments
+# Context can be set via:
+#   1. Environment variable: SNOWFLAKE_MCP_MODEL
+#   2. Runtime: Call the set_query_context tool at session start
 query_comment:
   enabled: False # Set to True to enable query comments
   # template: # Optional custom template (uses default if not specified)
@@ -64,11 +66,20 @@ query_comment:
   #   tool: "{tool_name}"
   #   statement_type: "{statement_type}"
   #   model: "{model}"
+  #   session_id: "{session_id}"
+  #   agent_name: "{agent_name}"
+  #
   # Supported template variables:
   #   {request_id} - Unique UUID for this request
   #   {timestamp} - ISO 8601 timestamp (UTC)
   #   {tool_name} - Name of the MCP tool executing the query
   #   {statement_type} - SQL statement type (Select, Insert, etc.)
-  #   {model} - AI model name from SNOWFLAKE_MCP_MODEL env var
+  #   {model} - AI model name (from set_query_context or SNOWFLAKE_MCP_MODEL env var)
+  #   {session_id} - Session ID (from set_query_context)
+  #   {agent_name} - Agent name (from set_query_context)
   #   {server_name} - MCP server name
   #   {server_version} - Server version
+  #   {custom_key} - Any custom key set via set_query_context tool
+  #
+  # To set context at runtime, call the set_query_context tool:
+  #   set_query_context(model="claude-sonnet-4", session_id="sess-123", agent_name="my-agent")

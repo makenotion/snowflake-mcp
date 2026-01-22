@@ -144,6 +144,8 @@ class SnowflakeService:
         self.query_tag = query_tag if query_tag is not None else None
         self.query_comment_template: Optional[Dict[str, Any]] = None
         self.query_comment_enabled = False
+        # Runtime query context set by agents via set_query_context tool
+        self.query_context: Dict[str, str] = {}
         self.tag_major_version = (
             tag_major_version if tag_major_version is not None else None
         )
@@ -438,6 +440,43 @@ class SnowflakeService:
         else:
             return None
 
+    def set_query_context(self, **kwargs: str) -> Dict[str, str]:
+        """
+        Set runtime query context values for query comments.
+
+        This method allows agents to set context information (like model name,
+        session ID, etc.) that will be included in subsequent query comments.
+        Context values override environment variables.
+
+        Parameters
+        ----------
+        **kwargs : str
+            Key-value pairs to set in the query context.
+            Common keys: model, session_id, agent_name, user_context
+
+        Returns
+        -------
+        Dict[str, str]
+            The updated query context dictionary
+        """
+        self.query_context.update(kwargs)
+        return self.query_context.copy()
+
+    def get_query_context(self) -> Dict[str, str]:
+        """
+        Get the current runtime query context.
+
+        Returns
+        -------
+        Dict[str, str]
+            Current query context dictionary
+        """
+        return self.query_context.copy()
+
+    def clear_query_context(self) -> None:
+        """Clear all runtime query context values."""
+        self.query_context.clear()
+
     def build_query_comment(
         self,
         tool_name: str = "unknown",
@@ -452,9 +491,12 @@ class SnowflakeService:
         - {timestamp}: ISO 8601 timestamp
         - {tool_name}: Name of the MCP tool being used
         - {statement_type}: Type of SQL statement (Select, Insert, etc.)
-        - {model}: AI model name from SNOWFLAKE_MCP_MODEL env var
+        - {model}: AI model name (from query_context, env var, or 'unknown')
+        - {session_id}: Session ID (from query_context or 'unknown')
+        - {agent_name}: Agent name (from query_context or 'unknown')
         - {server_name}: MCP server name
         - {server_version}: Server version string
+        - Any custom keys set via set_query_context
 
         Parameters
         ----------
@@ -471,16 +513,27 @@ class SnowflakeService:
         if not self.query_comment_enabled or self.query_comment_template is None:
             return None
 
-        # Build substitution values
+        # Build substitution values - runtime context takes precedence over env vars
         substitutions = {
             "request_id": str(uuid.uuid4()),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "tool_name": tool_name,
             "statement_type": statement_type,
-            "model": os.environ.get("SNOWFLAKE_MCP_MODEL", "unknown"),
+            # Model: check runtime context first, then env var, then default
+            "model": self.query_context.get(
+                "model", os.environ.get("SNOWFLAKE_MCP_MODEL", "unknown")
+            ),
+            # Session ID: from runtime context or default
+            "session_id": self.query_context.get("session_id", "unknown"),
+            # Agent name: from runtime context or default
+            "agent_name": self.query_context.get("agent_name", "unknown"),
             "server_name": server_name,
             "server_version": f"{tag_major_version}.{tag_minor_version}",
         }
+        # Add any additional custom context values
+        for key, value in self.query_context.items():
+            if key not in substitutions:
+                substitutions[key] = value
 
         def substitute_value(value: Any) -> Any:
             """Recursively substitute template variables in values."""

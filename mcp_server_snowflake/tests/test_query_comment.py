@@ -258,3 +258,203 @@ class TestBuildQueryComment:
 
         comment = json.loads(result)
         assert comment["model"] == "unknown"
+
+
+class TestSetQueryContext:
+    """Tests for runtime query context management."""
+
+    def test_set_query_context_updates_context(self, tmp_path):
+        """Test that set_query_context updates the context dictionary."""
+        config_file = create_config_with_query_comment(tmp_path, {"enabled": True})
+
+        with (
+            patch("mcp_server_snowflake.server.connect") as mock_connect,
+            patch("mcp_server_snowflake.server.Root") as mock_root,
+        ):
+            mock_connect.return_value = MagicMock()
+            mock_root.return_value = MagicMock()
+            service = SnowflakeService(
+                service_config_file=str(config_file),
+                transport="stdio",
+                connection_params={
+                    "account": "test",
+                    "user": "test",
+                    "password": "test",
+                },
+            )
+
+            # Initially empty
+            assert service.query_context == {}
+
+            # Set context
+            result = service.set_query_context(
+                model="claude-sonnet-4", session_id="test-session-123"
+            )
+
+            assert result["model"] == "claude-sonnet-4"
+            assert result["session_id"] == "test-session-123"
+            assert service.query_context["model"] == "claude-sonnet-4"
+
+    def test_runtime_context_overrides_env_var(self, tmp_path):
+        """Test that runtime context takes precedence over environment variables."""
+        config_file = create_config_with_query_comment(tmp_path, {"enabled": True})
+
+        with (
+            patch("mcp_server_snowflake.server.connect") as mock_connect,
+            patch("mcp_server_snowflake.server.Root") as mock_root,
+            patch.dict(os.environ, {"SNOWFLAKE_MCP_MODEL": "env-model"}),
+        ):
+            mock_connect.return_value = MagicMock()
+            mock_root.return_value = MagicMock()
+            service = SnowflakeService(
+                service_config_file=str(config_file),
+                transport="stdio",
+                connection_params={
+                    "account": "test",
+                    "user": "test",
+                    "password": "test",
+                },
+            )
+
+            # Set runtime context with different model
+            service.set_query_context(model="runtime-model")
+
+            result = service.build_query_comment(
+                tool_name="test_tool", statement_type="Select"
+            )
+
+        comment = json.loads(result)
+        # Runtime context should override env var
+        assert comment["model"] == "runtime-model"
+
+    def test_get_query_context_returns_copy(self, tmp_path):
+        """Test that get_query_context returns a copy of the context."""
+        config_file = create_config_with_query_comment(tmp_path, {"enabled": True})
+
+        with (
+            patch("mcp_server_snowflake.server.connect") as mock_connect,
+            patch("mcp_server_snowflake.server.Root") as mock_root,
+        ):
+            mock_connect.return_value = MagicMock()
+            mock_root.return_value = MagicMock()
+            service = SnowflakeService(
+                service_config_file=str(config_file),
+                transport="stdio",
+                connection_params={
+                    "account": "test",
+                    "user": "test",
+                    "password": "test",
+                },
+            )
+
+            service.set_query_context(model="test-model")
+            context = service.get_query_context()
+
+            # Modifying returned context shouldn't affect internal state
+            context["model"] = "modified"
+            assert service.query_context["model"] == "test-model"
+
+    def test_clear_query_context(self, tmp_path):
+        """Test that clear_query_context removes all context."""
+        config_file = create_config_with_query_comment(tmp_path, {"enabled": True})
+
+        with (
+            patch("mcp_server_snowflake.server.connect") as mock_connect,
+            patch("mcp_server_snowflake.server.Root") as mock_root,
+        ):
+            mock_connect.return_value = MagicMock()
+            mock_root.return_value = MagicMock()
+            service = SnowflakeService(
+                service_config_file=str(config_file),
+                transport="stdio",
+                connection_params={
+                    "account": "test",
+                    "user": "test",
+                    "password": "test",
+                },
+            )
+
+            service.set_query_context(model="test-model", session_id="test-session")
+            assert len(service.query_context) == 2
+
+            service.clear_query_context()
+            assert service.query_context == {}
+
+    def test_custom_context_in_template(self, tmp_path):
+        """Test that custom context keys are available for template substitution."""
+        custom_template = {
+            "model": "{model}",
+            "custom_field": "{my_custom_key}",
+        }
+        config_file = create_config_with_query_comment(
+            tmp_path, {"enabled": True, "template": custom_template}
+        )
+
+        with (
+            patch("mcp_server_snowflake.server.connect") as mock_connect,
+            patch("mcp_server_snowflake.server.Root") as mock_root,
+        ):
+            mock_connect.return_value = MagicMock()
+            mock_root.return_value = MagicMock()
+            service = SnowflakeService(
+                service_config_file=str(config_file),
+                transport="stdio",
+                connection_params={
+                    "account": "test",
+                    "user": "test",
+                    "password": "test",
+                },
+            )
+
+            # Set custom context including a non-standard key
+            service.set_query_context(model="test-model", my_custom_key="custom-value")
+
+            result = service.build_query_comment(
+                tool_name="test_tool", statement_type="Select"
+            )
+
+        comment = json.loads(result)
+        assert comment["model"] == "test-model"
+        assert comment["custom_field"] == "custom-value"
+
+    def test_session_id_and_agent_name_in_default_template(self, tmp_path):
+        """Test that session_id and agent_name work with extended default template."""
+        custom_template = {
+            "model": "{model}",
+            "session_id": "{session_id}",
+            "agent_name": "{agent_name}",
+        }
+        config_file = create_config_with_query_comment(
+            tmp_path, {"enabled": True, "template": custom_template}
+        )
+
+        with (
+            patch("mcp_server_snowflake.server.connect") as mock_connect,
+            patch("mcp_server_snowflake.server.Root") as mock_root,
+        ):
+            mock_connect.return_value = MagicMock()
+            mock_root.return_value = MagicMock()
+            service = SnowflakeService(
+                service_config_file=str(config_file),
+                transport="stdio",
+                connection_params={
+                    "account": "test",
+                    "user": "test",
+                    "password": "test",
+                },
+            )
+
+            service.set_query_context(
+                model="claude-opus-4",
+                session_id="sess-abc123",
+                agent_name="my-data-agent",
+            )
+
+            result = service.build_query_comment(
+                tool_name="test_tool", statement_type="Select"
+            )
+
+        comment = json.loads(result)
+        assert comment["model"] == "claude-opus-4"
+        assert comment["session_id"] == "sess-abc123"
+        assert comment["agent_name"] == "my-data-agent"
