@@ -42,9 +42,9 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --all-extras --dev
-      # TODO: enable once tests pass
+      # TODO: enable once pyright passes
       # - run: uv run pyright
-      # - run: uv run pytest
+      - run: uv run pytest
 
   semantic-release-dry-run:
     runs-on: ubuntu-latest
