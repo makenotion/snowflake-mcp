@@ -52,3 +52,23 @@ sql_statement_permissions: # List SQL statements to explicitly allow (True) or d
   - Unknown: False # To allow unknown or unmapped statement types, set Unknown: True.
   - Update: True
   - Use: True
+
+# Query comment configuration - adds metadata to queries for observability
+# Set SNOWFLAKE_MCP_MODEL env var to include the AI model name in comments
+query_comment:
+  enabled: False # Set to True to enable query comments
+  # template: # Optional custom template (uses default if not specified)
+  #   source: "my-mcp-agent"
+  #   request_id: "{request_id}"
+  #   timestamp: "{timestamp}"
+  #   tool: "{tool_name}"
+  #   statement_type: "{statement_type}"
+  #   model: "{model}"
+  # Supported template variables:
+  #   {request_id} - Unique UUID for this request
+  #   {timestamp} - ISO 8601 timestamp (UTC)
+  #   {tool_name} - Name of the MCP tool executing the query
+  #   {statement_type} - SQL statement type (Select, Insert, etc.)
+  #   {model} - AI model name from SNOWFLAKE_MCP_MODEL env var
+  #   {server_name} - MCP server name
+  #   {server_version} - Server version

@@ -8,7 +8,9 @@ from mcp_server_snowflake.query_manager.prompts import query_tool_prompt
 from mcp_server_snowflake.utils import SnowflakeException
 
 
-def run_query(statement: str, snowflake_service):
+def run_query(
+    statement: str, snowflake_service, tool_name: str = "run_snowflake_query"
+):
     """
     Execute SQL statement and fetch all results using Snowflake connector.
 
@@ -21,6 +23,8 @@ def run_query(statement: str, snowflake_service):
         SQL statement to execute
     snowflake_service : SnowflakeService
         The Snowflake service instance to use for connection
+    tool_name : str
+        Name of the tool executing the query (for query comments)
 
     Returns
     -------
@@ -33,6 +37,21 @@ def run_query(statement: str, snowflake_service):
         If connection fails or SQL execution encounters an error
     """
     try:
+        # Get statement type for query comment
+        statement_type = get_statement_type(statement)
+
+        # Build query comment if enabled
+        query_comment = snowflake_service.build_query_comment(
+            tool_name=tool_name,
+            statement_type=statement_type,
+        )
+
+        # Prepend comment to statement if enabled
+        if query_comment:
+            statement_with_comment = f"/* {query_comment} */\n{statement}"
+        else:
+            statement_with_comment = statement
+
         with snowflake_service.get_connection(
             use_dict_cursor=True,
             session_parameters=snowflake_service.get_query_tag_param(),
@@ -40,7 +59,7 @@ def run_query(statement: str, snowflake_service):
             con,
             cur,
         ):
-            cur.execute(statement)
+            cur.execute(statement_with_comment)
             return cur.fetchall()
     except Exception as e:
         raise SnowflakeException(
