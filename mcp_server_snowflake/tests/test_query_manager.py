@@ -9,8 +9,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-
 from mcp_server_snowflake.query_manager.tools import (
     get_statement_type,
     validate_sql_type,
@@ -104,8 +102,8 @@ class TestValidateSqlType:
         assert statement_type == "Drop"
         assert valid is True
 
-    def test_unknown_allowed_permits_unparseable(self):
-        """Test that 'unknown' in allow list permits unparseable statements."""
+    def test_unknown_allowed_permits_unparsable(self):
+        """Test that 'unknown' in allow list permits unparsable statements."""
         statement_type, valid = validate_sql_type(
             "SOME INVALID SQL @#$%",
             sql_allow_list=["unknown"],
@@ -114,8 +112,8 @@ class TestValidateSqlType:
         assert statement_type == "Unknown"
         assert valid is True
 
-    def test_unknown_disallowed_rejects_unparseable(self):
-        """Test that unparseable statements are rejected when not in allow list."""
+    def test_unknown_disallowed_rejects_unparsable(self):
+        """Test that unparsable statements are rejected when not in allow list."""
         statement_type, valid = validate_sql_type(
             "SOME INVALID SQL @#$%",
             sql_allow_list=["select"],
@@ -190,7 +188,7 @@ class TestSnowflakeSpecificSyntax:
 
     def test_parse_json_function(self):
         """Test Snowflake PARSE_JSON function."""
-        sql = "SELECT PARSE_JSON('{\"name\": \"test\"}') AS json_data"
+        sql = 'SELECT PARSE_JSON(\'{"name": "test"}\') AS json_data'
         assert get_statement_type(sql) == "Select"
 
     def test_flatten_function(self):
