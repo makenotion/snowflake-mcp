@@ -94,9 +94,6 @@ jobs:
         run: |
           set -e
 
-          # Store the current commit to detect if semantic-release makes changes
-          BEFORE_COMMIT=$(git rev-parse HEAD)
-
           # Create a release branch (reuse same branch name to avoid orphaned branches)
           BRANCH_NAME="snowflake-labs-mcp/release-auto"
           git checkout -b "$BRANCH_NAME"
@@ -104,18 +101,21 @@ jobs:
           # Force-push the branch to set up upstream tracking
           git push -f -u origin "$BRANCH_NAME"
 
-          # Run semantic-release to bump version (it will create a commit if needed)
+          # Run semantic-release to bump version (don't commit)
           # Don't create tag here since squash-merging orphans the tag
-          semantic-release -v version --no-tag
+          semantic-release version --no-commit --no-tag
 
-          # Check if semantic-release created a new commit
-          AFTER_COMMIT=$(git rev-parse HEAD)
-          if [ "$BEFORE_COMMIT" = "$AFTER_COMMIT" ]; then
+          # Check if semantic-release updated any files
+          # if so, commit and open PR
+          if git diff --cached --exit-code; then
             echo "No version changes needed"
             echo "has_changes=false" >> $GITHUB_OUTPUT
           else
             echo "has_changes=true" >> $GITHUB_OUTPUT
             echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+            # Commit the version bump
+            git commit -m "chore(release): bump version"
 
             # Push the branch (force push to update if branch already exists)
             git push -f origin "$BRANCH_NAME"
