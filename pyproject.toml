@@ -44,3 +44,41 @@ packages = ["mcp_server_snowflake"]
 [project.scripts]
 mcp-server-snowflake = "mcp_server_snowflake:main"
 snowflake-labs-mcp = "mcp_server_snowflake:main"
+
+[tool.semantic_release]
+version_toml = ["pyproject.toml:project.version"]
+build_command = """
+    uv lock --upgrade-package "$PACKAGE_NAME"
+    git add uv.lock
+    uv build --wheel
+"""
+major_on_zero = false
+tag_format = "v{version}"
+commit_parser = "angular"
+commit_message = "chore(release): snowflake-labs-mcp v{version}"
+upload_to_vcs_release = false
+
+[tool.semantic_release.commit_parser_options]
+minor_tags = ["feat"]
+patch_tags = ["fix", "perf"]
+other_allowed_tags = ["build", "chore", "ci", "docs", "style", "refactor", "test"]
+allowed_tags = ["feat", "fix", "perf", "build", "chore", "ci", "docs", "style", "refactor", "test"]
+
+[tool.semantic_release.changelog]
+exclude_commit_patterns = []
+
+[tool.semantic_release.commit_author]
+env = "GIT_COMMIT_AUTHOR"
+default = "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+
+[tool.semantic_release.changelog.default_templates]
+changelog_file = "CHANGELOG.md"
+output_format = "md"
+
+[tool.semantic_release.branches.main]
+match = "(main)"
+prerelease = false
+
+[tool.semantic_release.branches.release]
+match = "snowflake-labs-mcp/release-.*"
+prerelease = false
