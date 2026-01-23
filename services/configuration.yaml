@@ -58,7 +58,7 @@ sql_statement_permissions: # List SQL statements to explicitly allow (True) or d
 #   1. Environment variable: SNOWFLAKE_MCP_MODEL
 #   2. Runtime: Call the set_query_context tool at session start
 query_comment:
-  enabled: False # Set to True to enable query comments
+  enabled: True # Enabled by default for observability
   # template: # Optional custom template (uses default if not specified)
   #   source: "my-mcp-agent"
   #   request_id: "{request_id}"
