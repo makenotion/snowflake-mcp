@@ -65,10 +65,12 @@ query_comment:
   #   context:
   #     request_id: "{request_id}"
   #     timestamp: "{timestamp}"
+  #   intent: "{intent}"
   #   model_version: "{model}"
   #   query:
   #     tool: "{tool_name}"
   #     statement_type: "{statement_type}"
+  #   query_parameters: "{query_parameters}"
   #   user:
   #     email: "{user_email}"
   #     name: "{user_name}"
@@ -82,6 +84,8 @@ query_comment:
   #   {agent_name} - Agent name (from set_query_context, defaults to "mcp-server-snowflake")
   #   {user_email} - User email (from set_query_context or SNOWFLAKE_MCP_USER_EMAIL env var)
   #   {user_name} - User name (from set_query_context or SNOWFLAKE_MCP_USER_NAME env var)
+  #   {intent} - Query intent object: {category, confidence, domains, question}
+  #   {query_parameters} - Query params object: {datasets, dimensions, time_range}
   #   {session_id} - Session ID (from set_query_context)
   #   {server_name} - MCP server name
   #   {server_version} - Server version
@@ -92,5 +96,7 @@ query_comment:
   #     model="claude-sonnet-4-5-20250929",
   #     agent_name="Claude Code",
   #     user_email="user@example.com",
-  #     user_name="username"
+  #     user_name="username",
+  #     intent={"category": "aggregation", "question": "Total users"},
+  #     query_parameters={"datasets": ["my_table"], "dimensions": ["date"]}
   #   )

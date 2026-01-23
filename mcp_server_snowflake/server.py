@@ -61,11 +61,13 @@ DEFAULT_QUERY_COMMENT_TEMPLATE = {
         "request_id": "{request_id}",
         "timestamp": "{timestamp}",
     },
+    "intent": "{intent}",
     "model_version": "{model}",
     "query": {
         "tool": "{tool_name}",
         "statement_type": "{statement_type}",
     },
+    "query_parameters": "{query_parameters}",
     "user": {
         "email": "{user_email}",
         "name": "{user_name}",
@@ -542,6 +544,9 @@ class SnowflakeService:
             "user_name": self.query_context.get(
                 "user_name", os.environ.get("SNOWFLAKE_MCP_USER_NAME", "unknown")
             ),
+            # Intent and query_parameters: complex objects from agent (default to null)
+            "intent": self.query_context.get("intent"),
+            "query_parameters": self.query_context.get("query_parameters"),
             "server_name": server_name,
             "server_version": f"{tag_major_version}.{tag_minor_version}",
         }
@@ -553,9 +558,20 @@ class SnowflakeService:
         def substitute_value(value: Any) -> Any:
             """Recursively substitute template variables in values."""
             if isinstance(value, str):
+                # Check if the entire string is a single placeholder like "{intent}"
+                # If so, return the actual value (could be dict, None, etc.)
+                import re
+
+                match = re.fullmatch(r"\{(\w+)\}", value)
+                if match:
+                    key = match.group(1)
+                    if key in substitutions:
+                        return substitutions[key]
+                # Otherwise do string replacement
                 result = value
                 for key, sub_value in substitutions.items():
-                    result = result.replace(f"{{{key}}}", str(sub_value))
+                    if sub_value is not None:
+                        result = result.replace(f"{{{key}}}", str(sub_value))
                 return result
             elif isinstance(value, dict):
                 return {k: substitute_value(v) for k, v in value.items()}

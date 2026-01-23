@@ -91,14 +91,16 @@ included in all subsequent SQL query comments. This enables tracking queries bac
 specific agents, models, or sessions in Snowflake's query history.
 
 Common context keys:
-- model: The AI model name (e.g., "claude-sonnet-4", "gpt-4")
-- agent_name: Name of the agent or application making queries (e.g., "Claude Code")
+- model: The AI model name (e.g., "claude-sonnet-4-5-20250929")
+- agent_name: Name of the agent or application (e.g., "Claude Code")
 - user_email: Email of the user running the agent
 - user_name: Name of the user running the agent
+- intent: Object describing query intent (category, confidence, domains, question)
+- query_parameters: Object describing query details (datasets, dimensions, time_range)
 - session_id: A unique session identifier for grouping related queries
 
-You can also set custom key-value pairs that will be available as template variables.
-Context persists for the lifetime of the MCP server connection.""",
+Context persists for the lifetime of the MCP server connection. Call this tool again
+to update intent/query_parameters for different queries.""",
     )
     def set_query_context_tool(
         model: Annotated[
@@ -129,6 +131,20 @@ Context persists for the lifetime of the MCP server connection.""",
                 description="Name of the user running the agent",
             ),
         ] = None,
+        intent: Annotated[
+            dict,
+            Field(
+                default=None,
+                description="Query intent: {category, confidence, domains, question}",
+            ),
+        ] = None,
+        query_parameters: Annotated[
+            dict,
+            Field(
+                default=None,
+                description="Query parameters: {datasets, dimensions, time_range}",
+            ),
+        ] = None,
         session_id: Annotated[
             str,
             Field(
@@ -154,6 +170,10 @@ Context persists for the lifetime of the MCP server connection.""",
             context["user_email"] = user_email
         if user_name is not None:
             context["user_name"] = user_name
+        if intent is not None:
+            context["intent"] = intent
+        if query_parameters is not None:
+            context["query_parameters"] = query_parameters
         if session_id is not None:
             context["session_id"] = session_id
         if custom_context is not None:
