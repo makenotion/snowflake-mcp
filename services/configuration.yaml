@@ -54,32 +54,43 @@ sql_statement_permissions: # List SQL statements to explicitly allow (True) or d
   - Use: True
 
 # Query comment configuration - adds metadata to queries for observability
+# Format matches dbt query tag schema for consistency across tools
 # Context can be set via:
-#   1. Environment variable: SNOWFLAKE_MCP_MODEL
+#   1. Environment variables: SNOWFLAKE_MCP_MODEL, SNOWFLAKE_MCP_USER_EMAIL, SNOWFLAKE_MCP_USER_NAME
 #   2. Runtime: Call the set_query_context tool at session start
 query_comment:
   enabled: True # Enabled by default for observability
-  # template: # Optional custom template (uses default if not specified)
-  #   source: "my-mcp-agent"
-  #   request_id: "{request_id}"
-  #   timestamp: "{timestamp}"
-  #   tool: "{tool_name}"
-  #   statement_type: "{statement_type}"
-  #   model: "{model}"
-  #   session_id: "{session_id}"
-  #   agent_name: "{agent_name}"
+  # template: # Optional custom template (default matches dbt query tag format)
+  #   agent: "{agent_name}"
+  #   context:
+  #     request_id: "{request_id}"
+  #     timestamp: "{timestamp}"
+  #   model_version: "{model}"
+  #   query:
+  #     tool: "{tool_name}"
+  #     statement_type: "{statement_type}"
+  #   user:
+  #     email: "{user_email}"
+  #     name: "{user_name}"
   #
   # Supported template variables:
   #   {request_id} - Unique UUID for this request
   #   {timestamp} - ISO 8601 timestamp (UTC)
   #   {tool_name} - Name of the MCP tool executing the query
   #   {statement_type} - SQL statement type (Select, Insert, etc.)
-  #   {model} - AI model name (from set_query_context or SNOWFLAKE_MCP_MODEL env var)
+  #   {model} - AI model version (from set_query_context or SNOWFLAKE_MCP_MODEL env var)
+  #   {agent_name} - Agent name (from set_query_context, defaults to "mcp-server-snowflake")
+  #   {user_email} - User email (from set_query_context or SNOWFLAKE_MCP_USER_EMAIL env var)
+  #   {user_name} - User name (from set_query_context or SNOWFLAKE_MCP_USER_NAME env var)
   #   {session_id} - Session ID (from set_query_context)
-  #   {agent_name} - Agent name (from set_query_context)
   #   {server_name} - MCP server name
   #   {server_version} - Server version
   #   {custom_key} - Any custom key set via set_query_context tool
   #
   # To set context at runtime, call the set_query_context tool:
-  #   set_query_context(model="claude-sonnet-4", session_id="sess-123", agent_name="my-agent")
+  #   set_query_context(
+  #     model="claude-sonnet-4-5-20250929",
+  #     agent_name="Claude Code",
+  #     user_email="user@example.com",
+  #     user_name="username"
+  #   )

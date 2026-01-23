@@ -54,14 +54,22 @@ tag_major_version = 1
 tag_minor_version = 3
 query_tag = {"origin": "sf_sit", "name": "mcp_server"}
 
-# Default query comment template - provides observability metadata for queries
+# Default query comment template - matches dbt query tag format for observability
 DEFAULT_QUERY_COMMENT_TEMPLATE = {
-    "source": "mcp-server-snowflake",
-    "request_id": "{request_id}",
-    "timestamp": "{timestamp}",
-    "tool": "{tool_name}",
-    "statement_type": "{statement_type}",
-    "model": "{model}",
+    "agent": "{agent_name}",
+    "context": {
+        "request_id": "{request_id}",
+        "timestamp": "{timestamp}",
+    },
+    "model_version": "{model}",
+    "query": {
+        "tool": "{tool_name}",
+        "statement_type": "{statement_type}",
+    },
+    "user": {
+        "email": "{user_email}",
+        "name": "{user_name}",
+    },
 }
 
 logger = get_logger(server_name)
@@ -525,8 +533,15 @@ class SnowflakeService:
             ),
             # Session ID: from runtime context or default
             "session_id": self.query_context.get("session_id", "unknown"),
-            # Agent name: from runtime context or default
-            "agent_name": self.query_context.get("agent_name", "unknown"),
+            # Agent name: from runtime context or default to server name
+            "agent_name": self.query_context.get("agent_name", server_name),
+            # User info: from runtime context
+            "user_email": self.query_context.get(
+                "user_email", os.environ.get("SNOWFLAKE_MCP_USER_EMAIL", "unknown")
+            ),
+            "user_name": self.query_context.get(
+                "user_name", os.environ.get("SNOWFLAKE_MCP_USER_NAME", "unknown")
+            ),
             "server_name": server_name,
             "server_version": f"{tag_major_version}.{tag_minor_version}",
         }

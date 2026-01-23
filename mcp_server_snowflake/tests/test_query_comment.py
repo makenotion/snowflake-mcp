@@ -177,16 +177,20 @@ class TestBuildQueryComment:
         assert result is not None
         comment = json.loads(result)
 
-        # Check substituted values
-        assert comment["tool"] == "run_snowflake_query"
-        assert comment["statement_type"] == "Select"
-        assert comment["model"] == "claude-sonnet-4"
-        assert comment["source"] == "mcp-server-snowflake"
+        # Check substituted values (new nested format matching dbt query tag)
+        assert comment["query"]["tool"] == "run_snowflake_query"
+        assert comment["query"]["statement_type"] == "Select"
+        assert comment["model_version"] == "claude-sonnet-4"
+        assert comment["agent"] == "mcp-server-snowflake"  # Default agent name
 
         # Check that UUID and timestamp were generated (not literal template strings)
-        assert "{request_id}" not in comment["request_id"]
-        assert "{timestamp}" not in comment["timestamp"]
-        assert len(comment["request_id"]) == 36  # UUID format
+        assert "{request_id}" not in comment["context"]["request_id"]
+        assert "{timestamp}" not in comment["context"]["timestamp"]
+        assert len(comment["context"]["request_id"]) == 36  # UUID format
+
+        # Check user fields default to unknown
+        assert comment["user"]["email"] == "unknown"
+        assert comment["user"]["name"] == "unknown"
 
     def test_nested_template_substitution(self, tmp_path):
         """Test that nested template variables are substituted."""
@@ -257,7 +261,7 @@ class TestBuildQueryComment:
             )
 
         comment = json.loads(result)
-        assert comment["model"] == "unknown"
+        assert comment["model_version"] == "unknown"
 
 
 class TestSetQueryContext:
@@ -325,7 +329,7 @@ class TestSetQueryContext:
 
         comment = json.loads(result)
         # Runtime context should override env var
-        assert comment["model"] == "runtime-model"
+        assert comment["model_version"] == "runtime-model"
 
     def test_get_query_context_returns_copy(self, tmp_path):
         """Test that get_query_context returns a copy of the context."""

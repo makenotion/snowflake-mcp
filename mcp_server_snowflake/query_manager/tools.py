@@ -92,9 +92,10 @@ specific agents, models, or sessions in Snowflake's query history.
 
 Common context keys:
 - model: The AI model name (e.g., "claude-sonnet-4", "gpt-4")
+- agent_name: Name of the agent or application making queries (e.g., "Claude Code")
+- user_email: Email of the user running the agent
+- user_name: Name of the user running the agent
 - session_id: A unique session identifier for grouping related queries
-- agent_name: Name of the agent or application making queries
-- user_context: Additional user-provided context
 
 You can also set custom key-value pairs that will be available as template variables.
 Context persists for the lifetime of the MCP server connection.""",
@@ -104,7 +105,28 @@ Context persists for the lifetime of the MCP server connection.""",
             str,
             Field(
                 default=None,
-                description="AI model name (e.g., 'claude-sonnet-4')",
+                description="AI model name (e.g., 'claude-sonnet-4-5-20250929')",
+            ),
+        ] = None,
+        agent_name: Annotated[
+            str,
+            Field(
+                default=None,
+                description="Name of the agent or application (e.g., 'Claude Code')",
+            ),
+        ] = None,
+        user_email: Annotated[
+            str,
+            Field(
+                default=None,
+                description="Email of the user running the agent",
+            ),
+        ] = None,
+        user_name: Annotated[
+            str,
+            Field(
+                default=None,
+                description="Name of the user running the agent",
             ),
         ] = None,
         session_id: Annotated[
@@ -112,13 +134,6 @@ Context persists for the lifetime of the MCP server connection.""",
             Field(
                 default=None,
                 description="Unique session identifier for grouping queries",
-            ),
-        ] = None,
-        agent_name: Annotated[
-            str,
-            Field(
-                default=None,
-                description="Name of the agent or application",
             ),
         ] = None,
         custom_context: Annotated[
@@ -133,10 +148,14 @@ Context persists for the lifetime of the MCP server connection.""",
         context = {}
         if model is not None:
             context["model"] = model
-        if session_id is not None:
-            context["session_id"] = session_id
         if agent_name is not None:
             context["agent_name"] = agent_name
+        if user_email is not None:
+            context["user_email"] = user_email
+        if user_name is not None:
+            context["user_name"] = user_name
+        if session_id is not None:
+            context["session_id"] = session_id
         if custom_context is not None:
             context.update(custom_context)
 
