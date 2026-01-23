@@ -69,7 +69,7 @@ jobs:
   create-release-pr:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: "github.event_name == 'push' && github.ref == 'refs/heads/main' && !startsWith(github.event.head_commit.message, 'chore(release): snowflake-labs-mcp')"
+    if: "github.event_name == 'push' && github.ref == 'refs/heads/main' && !startsWith(github.event.head_commit.message, 'chore(release): notion-snowflake-mcp')"
     permissions:
       contents: write
       pull-requests: write
@@ -95,7 +95,7 @@ jobs:
           set -e
 
           # Create a release branch (reuse same branch name to avoid orphaned branches)
-          BRANCH_NAME="snowflake-labs-mcp/release-auto"
+          BRANCH_NAME="notion-snowflake-mcp/release-auto"
           git checkout -b "$BRANCH_NAME"
 
           # Force-push the branch to set up upstream tracking
@@ -126,7 +126,7 @@ jobs:
         if: steps.release.outputs.has_changes == 'true'
         run: |
           gh pr create \
-            --title "chore(snowflake-labs-mcp): release version" \
+            --title "chore(notion-snowflake-mcp): release version" \
             --body "Automated version bump by semantic-release" \
             --base main \
             --head "${{ steps.release.outputs.branch }}"
@@ -136,7 +136,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: "github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'chore(release): snowflake-labs-mcp')"
+    if: "github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'chore(release): notion-snowflake-mcp')"
     permissions:
       contents: write
     steps:
@@ -174,8 +174,8 @@ jobs:
       - name: Create GitHub Release
         run: |
           gh release create "${{ steps.version.outputs.tag }}" \
-            --title "snowflake-labs-mcp v${{ steps.version.outputs.version }}" \
+            --title "notion-snowflake-mcp v${{ steps.version.outputs.version }}" \
             --generate-notes \
-            dist/snowflake_labs_mcp-${{ steps.version.outputs.version }}-py3-none-any.whl
+            dist/notion_snowflake_mcp-${{ steps.version.outputs.version }}-py3-none-any.whl
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

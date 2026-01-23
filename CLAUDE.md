@@ -9,13 +9,13 @@ To manually publish a version to the pyx registry:
 uv build --wheel
 
 # Publish (requires authentication via `uv auth` or UV_PUBLISH_TOKEN env var)
-uv publish --publish-url https://api.pyx.dev/v1/upload/notion/main dist/snowflake_labs_mcp-<version>-py3-none-any.whl
+uv publish --publish-url https://api.pyx.dev/v1/upload/notion/main dist/notion_snowflake_mcp-<version>-py3-none-any.whl
 ```
 
 ### Automated Publishing (CI/CD)
 
 Publishing happens automatically in CI when:
-1. A commit starting with `chore(release): snowflake-labs-mcp` is pushed to main
+1. A commit starting with `chore(release): notion-snowflake-mcp` is pushed to main
 2. The workflow creates a git tag, builds the wheel, and publishes to pyx
 
 The release flow:

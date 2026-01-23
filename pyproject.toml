@@ -1,7 +1,7 @@
 [project]
-name = "snowflake-labs-mcp"
-version = "1.3.5"
-description = "MCP server for Snowflake"
+name = "notion-snowflake-mcp"
+version = "1.4.0"
+description = "MCP server for Snowflake (Notion fork)"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [
@@ -43,7 +43,7 @@ packages = ["mcp_server_snowflake"]
 
 [project.scripts]
 mcp-server-snowflake = "mcp_server_snowflake:main"
-snowflake-labs-mcp = "mcp_server_snowflake:main"
+notion-snowflake-mcp = "mcp_server_snowflake:main"
 
 [tool.semantic_release]
 version_toml = ["pyproject.toml:project.version"]
@@ -55,7 +55,7 @@ build_command = """
 major_on_zero = false
 tag_format = "v{version}"
 commit_parser = "angular"
-commit_message = "chore(release): snowflake-labs-mcp v{version}"
+commit_message = "chore(release): notion-snowflake-mcp v{version}"
 upload_to_vcs_release = false
 
 [tool.semantic_release.commit_parser_options]
@@ -80,5 +80,5 @@ match = "(main)"
 prerelease = false
 
 [tool.semantic_release.branches.release]
-match = "snowflake-labs-mcp/release-.*"
+match = "notion-snowflake-mcp/release-.*"
 prerelease = false
