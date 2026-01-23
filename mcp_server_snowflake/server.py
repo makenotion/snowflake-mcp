@@ -12,8 +12,10 @@
 import argparse
 import json
 import os
+import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager, contextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Generator, Literal, Optional, Tuple, cast
 
@@ -51,6 +53,26 @@ server_name = "mcp-server-snowflake"
 tag_major_version = 1
 tag_minor_version = 3
 query_tag = {"origin": "sf_sit", "name": "mcp_server"}
+
+# Default query comment template - matches dbt query tag format for observability
+DEFAULT_QUERY_COMMENT_TEMPLATE = {
+    "agent": "{agent_name}",
+    "context": {
+        "request_id": "{request_id}",
+        "timestamp": "{timestamp}",
+    },
+    "intent": "{intent}",
+    "model_version": "{model}",
+    "query": {
+        "tool": "{tool_name}",
+        "statement_type": "{statement_type}",
+    },
+    "query_parameters": "{query_parameters}",
+    "user": {
+        "email": "{user_email}",
+        "name": "{user_name}",
+    },
+}
 
 logger = get_logger(server_name)
 
@@ -130,6 +152,10 @@ class SnowflakeService:
         self.semantic_manager = False
         self.default_session_parameters: Dict[str, Any] = {}
         self.query_tag = query_tag if query_tag is not None else None
+        self.query_comment_template: Optional[Dict[str, Any]] = None
+        self.query_comment_enabled = False
+        # Runtime query context set by agents via set_query_context tool
+        self.query_context: Dict[str, str] = {}
         self.tag_major_version = (
             tag_major_version if tag_major_version is not None else None
         )
@@ -183,6 +209,16 @@ class SnowflakeService:
                 self.object_manager = other_services.get("object_manager", False)
                 self.query_manager = other_services.get("query_manager", False)
                 self.semantic_manager = other_services.get("semantic_manager", False)
+
+            # Parse query comment configuration
+            query_comment_config = service_config.get("query_comment", {})
+            if query_comment_config:
+                self.query_comment_enabled = query_comment_config.get("enabled", False)
+                custom_template = query_comment_config.get("template")
+                if custom_template:
+                    self.query_comment_template = custom_template
+                elif self.query_comment_enabled:
+                    self.query_comment_template = DEFAULT_QUERY_COMMENT_TEMPLATE.copy()
 
         except Exception as e:
             logger.error(f"Error extracting service specifications: {e}")
@@ -413,6 +449,139 @@ class SnowflakeService:
             return session_parameters
         else:
             return None
+
+    def set_query_context(self, **kwargs: str) -> Dict[str, str]:
+        """
+        Set runtime query context values for query comments.
+
+        This method allows agents to set context information (like model name,
+        session ID, etc.) that will be included in subsequent query comments.
+        Context values override environment variables.
+
+        Parameters
+        ----------
+        **kwargs : str
+            Key-value pairs to set in the query context.
+            Common keys: model, session_id, agent_name, user_context
+
+        Returns
+        -------
+        Dict[str, str]
+            The updated query context dictionary
+        """
+        self.query_context.update(kwargs)
+        return self.query_context.copy()
+
+    def get_query_context(self) -> Dict[str, str]:
+        """
+        Get the current runtime query context.
+
+        Returns
+        -------
+        Dict[str, str]
+            Current query context dictionary
+        """
+        return self.query_context.copy()
+
+    def clear_query_context(self) -> None:
+        """Clear all runtime query context values."""
+        self.query_context.clear()
+
+    def build_query_comment(
+        self,
+        tool_name: str = "unknown",
+        statement_type: str = "unknown",
+    ) -> Optional[str]:
+        """
+        Build a query comment string with template variable substitution.
+
+        Substitutes template variables in the query comment template with actual values.
+        Supported variables:
+        - {request_id}: Unique UUID for this request
+        - {timestamp}: ISO 8601 timestamp
+        - {tool_name}: Name of the MCP tool being used
+        - {statement_type}: Type of SQL statement (Select, Insert, etc.)
+        - {model}: AI model name (from query_context, env var, or 'unknown')
+        - {session_id}: Session ID (from query_context or 'unknown')
+        - {agent_name}: Agent name (from query_context or 'unknown')
+        - {server_name}: MCP server name
+        - {server_version}: Server version string
+        - Any custom keys set via set_query_context
+
+        Parameters
+        ----------
+        tool_name : str
+            Name of the MCP tool making the query
+        statement_type : str
+            Type of SQL statement being executed
+
+        Returns
+        -------
+        str or None
+            JSON string of the query comment, or None if disabled
+        """
+        if not self.query_comment_enabled or self.query_comment_template is None:
+            return None
+
+        # Build substitution values - runtime context takes precedence over env vars
+        substitutions = {
+            "request_id": str(uuid.uuid4()),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "tool_name": tool_name,
+            "statement_type": statement_type,
+            # Model: check runtime context first, then env var, then default
+            "model": self.query_context.get(
+                "model", os.environ.get("SNOWFLAKE_MCP_MODEL", "unknown")
+            ),
+            # Session ID: from runtime context or default
+            "session_id": self.query_context.get("session_id", "unknown"),
+            # Agent name: from runtime context or default to server name
+            "agent_name": self.query_context.get("agent_name", server_name),
+            # User info: from runtime context
+            "user_email": self.query_context.get(
+                "user_email", os.environ.get("SNOWFLAKE_MCP_USER_EMAIL", "unknown")
+            ),
+            "user_name": self.query_context.get(
+                "user_name", os.environ.get("SNOWFLAKE_MCP_USER_NAME", "unknown")
+            ),
+            # Intent and query_parameters: complex objects from agent (default to null)
+            "intent": self.query_context.get("intent"),
+            "query_parameters": self.query_context.get("query_parameters"),
+            "server_name": server_name,
+            "server_version": f"{tag_major_version}.{tag_minor_version}",
+        }
+        # Add any additional custom context values
+        for key, value in self.query_context.items():
+            if key not in substitutions:
+                substitutions[key] = value
+
+        def substitute_value(value: Any) -> Any:
+            """Recursively substitute template variables in values."""
+            if isinstance(value, str):
+                # Check if the entire string is a single placeholder like "{intent}"
+                # If so, return the actual value (could be dict, None, etc.)
+                import re
+
+                match = re.fullmatch(r"\{(\w+)\}", value)
+                if match:
+                    key = match.group(1)
+                    if key in substitutions:
+                        return substitutions[key]
+                # Otherwise do string replacement
+                result = value
+                for key, sub_value in substitutions.items():
+                    if sub_value is not None:
+                        result = result.replace(f"{{{key}}}", str(sub_value))
+                return result
+            elif isinstance(value, dict):
+                return {k: substitute_value(v) for k, v in value.items()}
+            elif isinstance(value, list):
+                return [substitute_value(item) for item in value]
+            else:
+                return value
+
+        comment = substitute_value(self.query_comment_template)
+        return json.dumps(comment)
 
 
 def get_var(var_name: str, env_var_name: str, args) -> Optional[str]:

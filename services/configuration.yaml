@@ -52,3 +52,51 @@ sql_statement_permissions: # List SQL statements to explicitly allow (True) or d
   - Unknown: False # To allow unknown or unmapped statement types, set Unknown: True.
   - Update: True
   - Use: True
+
+# Query comment configuration - adds metadata to queries for observability
+# Format matches dbt query tag schema for consistency across tools
+# Context can be set via:
+#   1. Environment variables: SNOWFLAKE_MCP_MODEL, SNOWFLAKE_MCP_USER_EMAIL, SNOWFLAKE_MCP_USER_NAME
+#   2. Runtime: Call the set_query_context tool at session start
+query_comment:
+  enabled: True # Enabled by default for observability
+  # template: # Optional custom template (default matches dbt query tag format)
+  #   agent: "{agent_name}"
+  #   context:
+  #     request_id: "{request_id}"
+  #     timestamp: "{timestamp}"
+  #   intent: "{intent}"
+  #   model_version: "{model}"
+  #   query:
+  #     tool: "{tool_name}"
+  #     statement_type: "{statement_type}"
+  #   query_parameters: "{query_parameters}"
+  #   user:
+  #     email: "{user_email}"
+  #     name: "{user_name}"
+  #
+  # Supported template variables:
+  #   {request_id} - Unique UUID for this request
+  #   {timestamp} - ISO 8601 timestamp (UTC)
+  #   {tool_name} - Name of the MCP tool executing the query
+  #   {statement_type} - SQL statement type (Select, Insert, etc.)
+  #   {model} - AI model version (from set_query_context or SNOWFLAKE_MCP_MODEL env var)
+  #   {agent_name} - Agent name (from set_query_context, defaults to "mcp-server-snowflake")
+  #   {user_email} - User email (from set_query_context or SNOWFLAKE_MCP_USER_EMAIL env var)
+  #   {user_name} - User name (from set_query_context or SNOWFLAKE_MCP_USER_NAME env var)
+  #   {intent} - Query intent object: {category, confidence, domains, question}
+  #   {query_parameters} - Query params object: {datasets, dimensions, time_range}
+  #   {session_id} - Session ID (from set_query_context)
+  #   {server_name} - MCP server name
+  #   {server_version} - Server version
+  #   {custom_key} - Any custom key set via set_query_context tool
+  #
+  # To set context at runtime, call the set_query_context tool:
+  #   set_query_context(
+  #     model="claude-sonnet-4-5-20250929",
+  #     agent_name="Claude Code",
+  #     user_email="user@example.com",
+  #     user_name="username",
+  #     intent={"category": "aggregation", "question": "Total users"},
+  #     query_parameters={"datasets": ["my_table"], "dimensions": ["date"]}
+  #   )
