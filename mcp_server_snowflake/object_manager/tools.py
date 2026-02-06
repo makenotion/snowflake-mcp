@@ -189,7 +189,6 @@ def parse_object(target_object: Any, obj_type: supported_objects):
 
 
 def initialize_object_manager_tools(server: FastMCP, snowflake_service):
-    root = snowflake_service.root
     supported_objects_list = list(get_args(supported_objects))
     object_type_annotation = Annotated[
         supported_objects,
@@ -221,7 +220,8 @@ def initialize_object_manager_tools(server: FastMCP, snowflake_service):
     ):
         # If string is passed, parse JSON and create object
         target_object = parse_object(target_object, object_type)
-        return create_object(target_object, root, mode)
+        snowflake_service._ensure_connected()
+        return create_object(target_object, snowflake_service.root, mode)
 
     @server.tool(
         name="drop_object",
@@ -233,7 +233,8 @@ def initialize_object_manager_tools(server: FastMCP, snowflake_service):
         if_exists: bool = False,
     ):
         target_object = parse_object(target_object, object_type)
-        return drop_object(target_object, root, if_exists)
+        snowflake_service._ensure_connected()
+        return drop_object(target_object, snowflake_service.root, if_exists)
 
     @server.tool(
         name="create_or_alter_object",
@@ -244,7 +245,8 @@ def initialize_object_manager_tools(server: FastMCP, snowflake_service):
         target_object: target_object_annotation,
     ):
         target_object = parse_object(target_object, object_type)
-        return create_or_alter_object(target_object, root)
+        snowflake_service._ensure_connected()
+        return create_or_alter_object(target_object, snowflake_service.root)
 
     @server.tool(
         name="describe_object",
@@ -255,7 +257,8 @@ def initialize_object_manager_tools(server: FastMCP, snowflake_service):
         target_object: target_object_annotation,
     ):
         target_object = parse_object(target_object, object_type)
-        return describe_object(target_object, root)
+        snowflake_service._ensure_connected()
+        return describe_object(target_object, snowflake_service.root)
 
     @server.tool(
         name="list_objects",

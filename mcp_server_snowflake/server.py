@@ -167,9 +167,16 @@ class SnowflakeService:
         self._is_spcs_container = is_running_in_spcs_container()
 
         self.unpack_service_specs()
-        # Persist connection to avoid closing it after each request
-        self.connection = self._get_persistent_connection()
-        self.root = Root(self.connection)
+        # Connection is lazily established on first tool use to avoid
+        # triggering SSO/Okta auth on MCP server startup.
+        self.connection = None
+        self.root = None
+
+    def _ensure_connected(self) -> None:
+        """Lazily establish the Snowflake connection on first use."""
+        if self.connection is None:
+            self.connection = self._get_persistent_connection()
+            self.root = Root(self.connection)
 
     def unpack_service_specs(self) -> None:
         """
@@ -241,6 +248,7 @@ class SnowflakeService:
             }
         else:
             # For external environments, we need to use the connection token
+            self._ensure_connected()
             return {
                 "Accept": "application/json, text/event-stream",
                 "Content-Type": "application/json",
@@ -261,6 +269,7 @@ class SnowflakeService:
                 "SNOWFLAKE_HOST", self.connection_params.get("account", "")
             )
         else:
+            self._ensure_connected()
             return self.connection.host
 
     @staticmethod
@@ -334,6 +343,7 @@ class SnowflakeService:
                 **connection_params,
                 session_parameters=session_parameters,
                 client_session_keep_alive=True,
+                client_store_temporary_credential=True,
                 paramstyle="qmark",
             )
             if connection:  # Send zero compute query to capture query tag
@@ -378,29 +388,7 @@ class SnowflakeService:
         """
 
         try:
-            if self.connection is None:
-                # Get connection parameters based on environment
-                if self._is_spcs_container:
-                    logger.info("Using SPCS container OAuth authentication")
-                    connection_params = {
-                        "host": os.getenv("SNOWFLAKE_HOST"),
-                        "account": os.getenv("SNOWFLAKE_ACCOUNT"),
-                        "token": get_spcs_container_token(),
-                        "authenticator": "oauth",
-                    }
-                    connection_params = {
-                        k: v for k, v in connection_params.items() if v is not None
-                    }
-                else:
-                    logger.info("Using external authentication")
-                    connection_params = self.connection_params.copy()
-
-                self.connection = connect(
-                    **connection_params,
-                    session_parameters=session_parameters,
-                    client_session_keep_alive=False,
-                    paramstyle="qmark",
-                )
+            self._ensure_connected()
 
             cursor = (
                 self.connection.cursor(DictCursor)
