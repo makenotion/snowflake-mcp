@@ -1048,7 +1048,7 @@ wheels = [
 
 [[package]]
 name = "notion-snowflake-mcp"
-version = "1.1.0"
+version = "1.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastmcp" },
@@ -2176,7 +2176,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/f3/ca/26862652bf7bbcb31bcb3bf6ccfe1f8fc80b9c7e54843ff48d2c0d243c20/tensorzero-2025.5.7-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6285f04302bae68b9e79faabccb15369250a1fc111d1ebf10969e8f9f9fab174", size = 14154488, upload-time = "2025-05-19T19:32:36.019Z" },
     { url = "https://files.pythonhosted.org/packages/98/8b/8de168ce6ce27278c167bbbb53dec3b5d7201b944ee08a799890adca10d5/tensorzero-2025.5.7-cp39-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:3d7fb155532c10d68483400a054749b34335e7a2e7b0190303cd113144e91f85", size = 13312766, upload-time = "2025-05-19T19:32:42.726Z" },
     { url = "https://files.pythonhosted.org/packages/de/d8/108eaf087b78768415551b2f5cf19ab9a51cdf613f5ec2f6478a220bd4d7/tensorzero-2025.5.7-cp39-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:c191e182ce0e63cb07769936c9ef30d79e407a877a95c8b6fe5062255e28bd24", size = 14361113, upload-time = "2025-05-19T19:32:44.723Z" },
-    { url = "https://files.pythonhosted.org/packages/4f/ca/7834b7e75c56b22631f334ed798046b7aa310994e4fb7e95a6c6e5ca76ce/tensorzero-2025.5.7-cp39-abi3-win_amd64.whl", hash = "sha256:51baa722424dc6ce3ed5906105b078ef69c4f2b61c00af04cacb9579f39a8b5e", size = 14083102, upload-time = "2025-05-19T19:32:47.934Z" },
 ]
 
 [[package]]

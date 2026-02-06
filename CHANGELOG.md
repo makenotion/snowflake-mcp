@@ -2,6 +2,34 @@
 
 <!-- version list -->
 
+## v1.2.0 (2026-02-06)
+
+### Chores
+
+- Enable query comments by default
+  ([`1ed6663`](https://github.com/makenotion/snowflake-mcp/commit/1ed666380883cc12dbc2e7a588ed5558f2b7bd5e))
+
+- Rename package to notion-snowflake-mcp and reset version
+  ([`7b516d8`](https://github.com/makenotion/snowflake-mcp/commit/7b516d87434a709966ed717b1f0d62628d5a8c7b))
+
+### Features
+
+- Add configurable query comment template for observability
+  ([`058d1f0`](https://github.com/makenotion/snowflake-mcp/commit/058d1f0c61110940aa099814e5203a194ce2616e))
+
+- Add intent and query_parameters fields to match dbt schema
+  ([`766e655`](https://github.com/makenotion/snowflake-mcp/commit/766e6552a7c9dbb770d307df26f587879f71954c))
+
+- Add set_query_context tool for runtime observability metadata
+  ([`e94d1c1`](https://github.com/makenotion/snowflake-mcp/commit/e94d1c17ea56ec8ab8bf40924d163d51ed862790))
+
+- Align query comment format with dbt query tag schema
+  ([`741575c`](https://github.com/makenotion/snowflake-mcp/commit/741575c5bd2c9d258a487a27fd7faf66af9f2c83))
+
+- Lazy Snowflake connection to avoid SSO on startup
+  ([`a590dac`](https://github.com/makenotion/snowflake-mcp/commit/a590dac825a4f4371890d7f742180a22e47f6eb0))
+
+
 ## v1.1.0 (2026-01-23)
 
 ### Bug Fixes
