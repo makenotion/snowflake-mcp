@@ -51,7 +51,7 @@ from mcp_server_snowflake.utils import (
 # Used to quantify Snowflake usage
 server_name = "mcp-server-snowflake"
 tag_major_version = 1
-tag_minor_version = 4
+tag_minor_version = 5
 query_tag = {"origin": "sf_sit", "name": "mcp_server"}
 
 # Default query comment template - matches dbt query tag format for observability
