@@ -2,6 +2,25 @@
 
 <!-- version list -->
 
+## v1.3.0 (2026-02-06)
+
+### Bug Fixes
+
+- Align release workflow commit message and conditions
+  ([`77cd8f3`](https://github.com/makenotion/snowflake-mcp/commit/77cd8f316e5c78939b75fc673dd27209795fe460))
+
+### Features
+
+- Bump tag_minor_version (#12) ([#12](https://github.com/makenotion/snowflake-mcp/pull/12),
+  [`fa22bc6`](https://github.com/makenotion/snowflake-mcp/commit/fa22bc66ed5a829154d164ea799be0cdfb9f25e3))
+
+- Bump tag_minor_version (#13) ([#13](https://github.com/makenotion/snowflake-mcp/pull/13),
+  [`a672143`](https://github.com/makenotion/snowflake-mcp/commit/a672143f89d0d322ae28d6fdb053e53d21b604e9))
+
+- Bump tag_minor_version for release test
+  ([`1e7c734`](https://github.com/makenotion/snowflake-mcp/commit/1e7c734ea7cae15184575fb1887a5c6c3cb78b4a))
+
+
 ## v1.2.0 (2026-02-06)
 
 ### Chores
