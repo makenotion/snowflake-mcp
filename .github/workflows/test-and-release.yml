@@ -69,7 +69,7 @@ jobs:
   create-release-pr:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: "github.event_name == 'push' && github.ref == 'refs/heads/main' && !startsWith(github.event.head_commit.message, 'chore(release): notion-snowflake-mcp')"
+    if: "github.event_name == 'push' && github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, 'chore(release): notion-snowflake-mcp')"
     permissions:
       contents: write
       pull-requests: write
@@ -115,7 +115,7 @@ jobs:
             echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
 
             # Commit the version bump
-            git commit -m "chore(release): bump version"
+            git commit -m "chore(release): notion-snowflake-mcp"
 
             # Push the branch (force push to update if branch already exists)
             git push -f origin "$BRANCH_NAME"
@@ -126,7 +126,7 @@ jobs:
         if: steps.release.outputs.has_changes == 'true'
         run: |
           gh pr create \
-            --title "chore(notion-snowflake-mcp): release version" \
+            --title "chore(release): notion-snowflake-mcp" \
             --body "Automated version bump by semantic-release" \
             --base main \
             --head "${{ steps.release.outputs.branch }}"
@@ -136,7 +136,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: "github.event_name == 'push' && github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'chore(release): notion-snowflake-mcp')"
+    if: "github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'chore(release): notion-snowflake-mcp')"
     permissions:
       contents: write
     steps:
